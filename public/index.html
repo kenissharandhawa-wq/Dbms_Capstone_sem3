@@ -1,0 +1,273 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Attendance & Grade Tracker</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top-nav-header">
+    <div class="nav-brand">
+      <div class="brand-icon">ST</div>
+      <div class="brand-text">
+        <strong>StudentTrack</strong>
+        <small>ACADEMIC WORKSPACE</small>
+      </div>
+    </div>
+
+    <nav class="nav-menu" aria-label="Main navigation">
+      <a class="nav-link active" href="#dashboard">📊 <span>Dashboard</span></a>
+      <a class="nav-link" href="#students">👥 <span>Students</span></a>
+      <a class="nav-link" href="#attendance">◷ <span>Attendance</span></a>
+      <a class="nav-link" href="#grades">📑 <span>Grades</span></a>
+    </nav>
+  </header>
+
+  <main class="main-content">
+    <header class="page-header">
+      <p class="eyebrow">ACADEMIC OVERVIEW</p>
+      <h1>Student Attendance &amp; Grade Tracker</h1>
+      <p class="muted">Manage student records, attendance and academic performance.</p>
+    </header>
+
+    <section id="dashboard" class="section">
+      <div class="section-heading">
+        <div>
+          <h2>Dashboard</h2>
+          <p class="muted">A quick view of your records</p>
+        </div>
+        <span class="pill">
+          <span class="status-dot"></span> System overview
+        </span>
+      </div>
+
+      <div class="stats-grid">
+        <article class="stat-card">
+          <div class="stat-top">
+            <span>Total students</span>
+            <span class="stat-icon blue">♙</span>
+          </div>
+          <strong id="totalStudents">0</strong>
+          <small>Registered students</small>
+        </article>
+
+        <article class="stat-card">
+          <div class="stat-top">
+            <span>Attendance records</span>
+            <span class="stat-icon green">◷</span>
+          </div>
+          <strong id="attendanceRecords">0</strong>
+          <small>Saved attendance entries</small>
+        </article>
+
+        <article class="stat-card">
+          <div class="stat-top">
+            <span>Attendance rate</span>
+            <span class="stat-icon amber">％</span>
+          </div>
+          <strong id="attendanceRate">0%</strong>
+          <small>Present records / all records</small>
+        </article>
+
+        <article class="stat-card">
+          <div class="stat-top">
+            <span>Grade records</span>
+            <span class="stat-icon purple">▤</span>
+          </div>
+          <strong id="gradeRecords">0</strong>
+          <small>Saved assessment results</small>
+        </article>
+      </div>
+    </section>
+
+    <section id="students" class="section panel">
+      <div class="section-heading">
+        <div>
+          <h2>Student records</h2>
+          <p class="muted">Add and manage registered students</p>
+        </div>
+      </div>
+
+      <form id="studentForm" class="form-grid">
+        <input type="hidden" id="studentId">
+
+        <label>
+          Roll number *
+          <input id="rollNo" required maxlength="30" placeholder="e.g. STU001">
+        </label>
+
+        <label>
+          Full name *
+          <input id="fullName" required maxlength="100" placeholder="Student name">
+        </label>
+
+        <label>
+          Email
+          <input id="email" type="email" placeholder="student@example.com">
+        </label>
+
+        <label>
+          Course / programme *
+          <input id="course" required placeholder="e.g. BCA">
+        </label>
+
+        <label>
+          Semester
+          <input id="semester" type="number" min="1" max="20" placeholder="e.g. 2">
+        </label>
+
+        <div class="form-actions">
+          <button class="btn primary" type="submit" id="studentSubmit">Add student</button>
+          <button class="btn secondary hidden" type="button" id="cancelEdit">Cancel edit</button>
+        </div>
+      </form>
+
+      <div class="table-tools">
+        <input id="studentSearch" class="search" placeholder="Search by name, roll number or course...">
+        <span id="studentCount" class="muted">0 students</span>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Student</th>
+              <th>Roll number</th>
+              <th>Course</th>
+              <th>Semester</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="studentsTable">
+            <tr>
+              <td colspan="5" class="empty">Loading students...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="attendance" class="section panel">
+      <div class="section-heading">
+        <div>
+          <h2>Mark attendance</h2>
+          <p class="muted">One record per student per date; saving again updates it</p>
+        </div>
+      </div>
+
+      <form id="attendanceForm" class="form-grid compact-grid">
+        <label>
+          Student *
+          <select id="attendanceStudent" required>
+            <option value="">Select student</option>
+          </select>
+        </label>
+
+        <label>
+          Date *
+          <input id="attendanceDate" type="date" required>
+        </label>
+
+        <label>
+          Status *
+          <select id="attendanceStatus" required>
+            <option>Present</option>
+            <option>Absent</option>
+            <option>Late</option>
+          </select>
+        </label>
+
+        <div class="form-actions">
+          <button class="btn primary" type="submit">Save attendance</button>
+        </div>
+      </form>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Student</th>
+              <th>Roll number</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="attendanceTable">
+            <tr>
+              <td colspan="4" class="empty">No attendance records yet.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="grades" class="section panel">
+      <div class="section-heading">
+        <div>
+          <h2>Grades & assessments</h2>
+          <p class="muted">Save marks and view calculated percentages</p>
+        </div>
+      </div>
+
+      <form id="gradeForm" class="form-grid">
+        <label>
+          Student *
+          <select id="gradeStudent" required>
+            <option value="">Select student</option>
+          </select>
+        </label>
+
+        <label>
+          Subject *
+          <input id="subject" required placeholder="e.g. Database Management">
+        </label>
+
+        <label>
+          Assessment *
+          <input id="assessment" required placeholder="e.g. Internal Test 1">
+        </label>
+
+        <label>
+          Marks obtained *
+          <input id="marksObtained" type="number" min="0" step="0.01" required placeholder="e.g. 42">
+        </label>
+
+        <label>
+          Total marks *
+          <input id="totalMarks" type="number" min="0.01" step="0.01" required placeholder="e.g. 50">
+        </label>
+
+        <div class="form-actions">
+          <button class="btn primary" type="submit">Save grade</button>
+        </div>
+      </form>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Student</th>
+              <th>Subject</th>
+              <th>Assessment</th>
+              <th>Marks</th>
+              <th>Percentage</th>
+            </tr>
+          </thead>
+          <tbody id="gradesTable">
+            <tr>
+              <td colspan="5" class="empty">No grades recorded yet.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer>StudentTrack · Academic workspace</footer>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="app.js"></script>
+</body>
+</html>
