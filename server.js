@@ -30,7 +30,11 @@ app.get("/api/health", async (req, res) => {
     await pool.query("SELECT 1");
     res.json({ status: "ok", database: "connected" });
   } catch (error) {
-    res.status(500).json({ status: "error", message: "Database connection failed. Check your .env settings." });
+    console.error("MySQL Connection Error:", error.code, error.message);
+    res.status(500).json({
+      status: "error",
+      message: "Database connection failed."
+    });
   }
 });
 
