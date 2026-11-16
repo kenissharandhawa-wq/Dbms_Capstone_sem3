@@ -39,6 +39,4 @@ CREATE TABLE IF NOT EXISTS grades (
     )
 );
 
--- Optional sample rows for testing (uncomment if you want demo data):
--- INSERT INTO students (roll_no, full_name, email, course, semester)
--- VALUES ('STU001', 'Aarav Sharma', 'aarav@example.com', 'BCA', 2);
+
