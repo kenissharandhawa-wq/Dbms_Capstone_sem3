@@ -22,6 +22,7 @@
       <a class="nav-link" href="#students">👥 <span>Students</span></a>
       <a class="nav-link" href="#attendance">◷ <span>Attendance</span></a>
       <a class="nav-link" href="#grades">📑 <span>Grades</span></a>
+      <a class="nav-link" href="#reports">📈 <span>Reports</span></a>
     </nav>
   </header>
 
@@ -127,6 +128,8 @@
       <div class="table-tools">
         <input id="studentSearch" class="search" placeholder="Search by name, roll number or course...">
         <span id="studentCount" class="muted">0 students</span>
+        <label class="btn secondary csv-label" for="csvImport">Import CSV</label>
+        <input id="csvImport" type="file" accept=".csv,text/csv" class="hidden" aria-label="Import students CSV">
       </div>
 
       <div class="table-wrap">
@@ -147,6 +150,8 @@
           </tbody>
         </table>
       </div>
+      <div class="pager"><button id="studentsPrev" class="btn secondary" disabled>Previous</button><span id="studentsPageInfo" class="muted">Page 1</span><button id="studentsNext" class="btn secondary" disabled>Next</button></div>
+      <p class="muted small-note">CSV columns: roll_no, full_name, email, course, semester (maximum 500 students per file).</p>
     </section>
 
     <section id="attendance" class="section panel">
@@ -262,6 +267,14 @@
           </tbody>
         </table>
       </div>
+    </section>
+
+    <section id="reports" class="section panel">
+      <div class="section-heading"><div><h2>Student performance reports</h2><p class="muted">Live MySQL aggregations: attendance and average assessment percentage</p></div></div>
+      <div class="table-wrap"><table><thead><tr><th>Student</th><th>Course</th><th>Attendance entries</th><th>Present %</th><th>Assessments</th><th>Avg. marks %</th></tr></thead>
+        <tbody id="reportsTable"><tr><td colspan="6" class="empty">Loading reports...</td></tr></tbody></table></div>
+      <div class="pager"><button id="reportsPrev" class="btn secondary" disabled>Previous</button><span id="reportsPageInfo" class="muted">Page 1</span><button id="reportsNext" class="btn secondary" disabled>Next</button></div>
+      <p class="muted small-note">Present % counts only "Present" records. Average marks % is the simple mean of assessment percentages (not weighted by total marks).</p>
     </section>
 
     <footer>StudentTrack · Academic workspace</footer>

@@ -25,6 +25,23 @@ function validId(value) {
   return Number.isInteger(Number(value)) && Number(value) > 0;
 }
 
+
+function pagination(req) {
+  const page = Math.max(1, Math.min(1000000, Number.parseInt(req.query.page, 10) || 1));
+  const pageSize = Math.max(1, Math.min(50, Number.parseInt(req.query.pageSize, 10) || 10));
+  return { page, pageSize, offset: (page - 1) * pageSize };
+}
+
+function validStudent(entry) {
+  if (!entry || typeof entry !== "object") return false;
+  const { roll_no, full_name, course, email, semester } = entry;
+  return typeof roll_no === "string" && roll_no.trim().length > 0 && roll_no.trim().length <= 30 &&
+    typeof full_name === "string" && full_name.trim().length > 0 && full_name.trim().length <= 100 &&
+    typeof course === "string" && course.trim().length > 0 && course.trim().length <= 100 &&
+    (email == null || (typeof email === "string" && email.length <= 120)) &&
+    (semester == null || semester === "" || (Number.isInteger(Number(semester)) && Number(semester) >= 1 && Number(semester) <= 20));
+}
+
 app.get("/api/health", async (req, res) => {
   try {
     await pool.query("SELECT 1");
@@ -59,24 +76,92 @@ app.get("/api/dashboard", async (req, res) => {
   }
 });
 
+// Database-side search and pagination: only the requested page is sent to the browser.
 app.get("/api/students", async (req, res) => {
   try {
+    const { page, pageSize, offset } = pagination(req);
+    const search = String(req.query.search || "").trim().slice(0, 100);
+    const where = search ? "WHERE s.roll_no LIKE ? OR s.full_name LIKE ? OR s.course LIKE ? OR s.email LIKE ?" : "";
+    const escaped = search.replace(/[\\%_]/g, "\\$&");
+    const params = search ? Array(4).fill(`%${escaped}%`) : [];
+    const [counts] = await pool.query(`SELECT COUNT(*) AS total FROM students s ${where}`, params);
     const [rows] = await pool.query(`
       SELECT s.*,
         (SELECT COUNT(*) FROM attendance a WHERE a.student_id = s.id) AS attendance_count,
         (SELECT COUNT(*) FROM grades g WHERE g.student_id = s.id) AS grade_count
-      FROM students s
-      ORDER BY s.id DESC
-    `);
-    res.json(rows);
+      FROM students s ${where}
+      ORDER BY s.id DESC LIMIT ? OFFSET ?
+    `, [...params, pageSize, offset]);
+    res.json({ rows, total: Number(counts[0].total), page, pageSize,
+      totalPages: Math.max(1, Math.ceil(Number(counts[0].total) / pageSize)) });
   } catch (error) {
+    console.error("Student listing error:", error.message);
     res.status(500).json({ message: "Could not load students." });
+  }
+});
+
+// Dedicated lightweight selector endpoint avoids sending all student records in table views.
+app.get("/api/student-options", async (req, res) => {
+  try {
+    const [rows] = await pool.query("SELECT id, roll_no, full_name FROM students ORDER BY roll_no LIMIT 5000");
+    res.json(rows);
+  } catch (error) { res.status(500).json({ message: "Could not load student options." }); }
+});
+
+// Bulk import in a transaction: invalid or duplicate entries roll back the whole batch.
+app.post("/api/students/bulk", async (req, res) => {
+  const rows = req.body?.students;
+  if (!Array.isArray(rows) || rows.length < 1 || rows.length > 500 || !rows.every(validStudent)) {
+    return res.status(400).json({ message: "Upload 1 to 500 valid students (roll_no, full_name, course required)." });
+  }
+  const rolls = rows.map(r => r.roll_no.trim().toLowerCase());
+  if (new Set(rolls).size !== rolls.length) return res.status(409).json({ message: "Duplicate roll numbers in the CSV." });
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    for (const r of rows) {
+      await conn.execute("INSERT INTO students (roll_no, full_name, email, course, semester) VALUES (?, ?, ?, ?, ?)",
+        [r.roll_no.trim(), r.full_name.trim(), r.email?.trim() || null, r.course.trim(), r.semester ? Number(r.semester) : null]);
+    }
+    await conn.commit();
+    res.status(201).json({ message: `${rows.length} students imported successfully.` });
+  } catch (error) {
+    await conn.rollback();
+    res.status(error.code === "ER_DUP_ENTRY" ? 409 : 500).json({
+      message: error.code === "ER_DUP_ENTRY" ? "A roll number already exists. No students were imported." : "Import failed; no students were imported."
+    });
+  } finally { conn.release(); }
+});
+
+// Reports use SQL aggregations and left joins so students without records appear too.
+app.get("/api/reports", async (req, res) => {
+  try {
+    const { page, pageSize, offset } = pagination(req);
+    const [[countRow]] = await pool.query("SELECT COUNT(*) AS total FROM students");
+    const [rows] = await pool.query(`
+      SELECT s.id, s.roll_no, s.full_name, s.course,
+        COUNT(DISTINCT a.id) AS total_attendance,
+        COUNT(DISTINCT CASE WHEN a.status = 'Present' THEN a.id END) AS present_days,
+        COUNT(DISTINCT g.id) AS grade_count,
+        ROUND((SELECT AVG(g2.marks_obtained / g2.total_marks * 100)
+               FROM grades g2 WHERE g2.student_id = s.id), 2) AS average_percentage
+      FROM students s
+      LEFT JOIN attendance a ON a.student_id = s.id
+      LEFT JOIN grades g ON g.student_id = s.id
+      GROUP BY s.id, s.roll_no, s.full_name, s.course
+      ORDER BY s.id DESC LIMIT ? OFFSET ?
+    `, [pageSize, offset]);
+    res.json({ rows, total: Number(countRow.total), page, pageSize,
+      totalPages: Math.max(1, Math.ceil(Number(countRow.total) / pageSize)) });
+  } catch (error) {
+    console.error("Report error:", error.message);
+    res.status(500).json({ message: "Could not load reports." });
   }
 });
 
 app.post("/api/students", async (req, res) => {
   const { roll_no, full_name, email, course, semester } = req.body;
-  if (!roll_no?.trim() || !full_name?.trim() || !course?.trim()) {
+  if (!validStudent(req.body)) {
     return res.status(400).json({ message: "Roll number, student name and course are required." });
   }
   try {
@@ -94,7 +179,7 @@ app.post("/api/students", async (req, res) => {
 app.put("/api/students/:id", async (req, res) => {
   if (!validId(req.params.id)) return res.status(400).json({ message: "Invalid student ID." });
   const { roll_no, full_name, email, course, semester } = req.body;
-  if (!roll_no?.trim() || !full_name?.trim() || !course?.trim()) {
+  if (!validStudent(req.body)) {
     return res.status(400).json({ message: "Roll number, student name and course are required." });
   }
   try {

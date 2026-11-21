@@ -614,3 +614,10 @@ footer {
     margin-bottom: 28px;
   }
 }
+
+/* Final-evaluation additions: preserve the existing visual theme */
+.pager {display:flex;gap:12px;align-items:center;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
+.pager .btn {padding:9px 14px}
+.pager .btn:disabled {opacity:.45;cursor:not-allowed}
+.csv-label {cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+.small-note {font-size:12px;margin-top:12px}
